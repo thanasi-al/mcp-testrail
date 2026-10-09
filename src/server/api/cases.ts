@@ -178,7 +178,8 @@ export function registerCaseTools(
 						pagination: {
 							limit,
 							offset,
-							total: testCases.size,
+							// TestRail's paginated get_cases has no total count; size is this page only
+							returned: testCases.size,
 							hasMore: testCases._links.next !== null,
 						},
 					},
