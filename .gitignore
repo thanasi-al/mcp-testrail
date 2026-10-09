@@ -26,4 +26,3 @@ coverage/
 .env
 .testrail-e2e.env
 .mcp.json
-.playwright-cli/

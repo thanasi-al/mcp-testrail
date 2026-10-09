@@ -1,45 +1,29 @@
 # Claude Instructions for MCP TestRail Project
 
 ## Project Overview
-This is an MCP (Model Context Protocol) server for TestRail integration built with TypeScript. When working on this project, always reference the documentation in the `AI/` directory for context and guidance.
+This is an MCP (Model Context Protocol) server for TestRail integration built with TypeScript. It runs over stdio only.
 
-## Development Workflow
-Before making any changes, review `AI/development-workflow.md` for the complete development process including:
-- Environment setup
-- Build and test commands
-- Debugging procedures
-- Project structure
-
-## Key Commands to Remember
-- **Development**: `npm run start:fastmcp`
+## Key Commands
 - **Build**: `npm run build`
 - **Test**: `npm test`
 - **Format**: `npm run format`
-- **Debug**: `npm run debug`
-- **Production**: `npm run start:stdio`
+- **Run**: `npm run start:stdio` (runs `dist/stdio.js`; build first)
 
 ## Project Structure
 ```
 src/
-├── client/       # TestRail API client implementation
-├── server/       # MCP server implementation
-├── shared/       # Common schemas and types
-├── stdio.ts      # stdio mode entry point
-└── sse.ts        # SSE mode entry point
+├── client/       # TestRail API client implementation (axios)
+├── server/       # MCP tool and resource registration
+├── shared/       # Zod schemas and types
+└── stdio.ts      # stdio entry point
 ```
 
 ## Important Notes
 - Always run tests after making changes: `npm test`
 - Use Biome for code formatting: `npm run format`
-- Node.js version requirement: 20.18.1 ~ 22.14.0
+- Node.js version requirement: >= 20.18.1 (see `engines` in package.json)
 - The project uses ES modules (`"type": "module"`)
-- MCP Inspector is available for debugging via `npm run debug`
-
-## When Making Changes
-1. Check existing documentation in `AI/` directory
-2. Follow the development workflow in `AI/development-workflow.md`
-3. Run tests and formatting before committing
-4. Update relevant documentation if adding new features
+- Dependencies install from registry.npmjs.org; use `npm ci` so lockfile integrity hashes are enforced
 
 ## Environment Variables Required
 - `TESTRAIL_URL`: Your TestRail instance URL

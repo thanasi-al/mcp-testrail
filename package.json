@@ -2,10 +2,7 @@
   "name": "@bun913/mcp-testrail",
   "author": "bun913",
   "homepage": "https://github.com/bun913/mcp-testrail",
-  "private": false,
-  "publishConfig": {
-    "access": "public"
-  },
+  "private": true,
   "version": "0.19.9",
   "type": "module",
   "main": "dist/index.js",
@@ -20,18 +17,16 @@
     "test": "vitest ./test --reporter=verbose --coverage",
     "test:ci": "vitest run ./test --silent --coverage --reporter=verbose",
     "build": "tsc",
-    "prepublishOnly": "npm run build",
-    "playwright-cli": "playwright-cli"
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.13.14",
     "@vitest/coverage-v8": "^4.1.8",
     "typescript": "~5.7.2",
-    "@playwright/cli": "^0.1.1",
     "vitest": "^4.1.8"
   },
   "dependencies": {
-    "@biomejs/biome": "^1.9.4",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "axios": "^1.16.0",
     "dotenv": "^16.4.5",
