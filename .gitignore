@@ -26,3 +26,4 @@ coverage/
 .env
 .testrail-e2e.env
 .mcp.json
+run-local.sh

@@ -33,6 +33,71 @@ export class TestRailNetworkError extends TestRailError {
 	}
 }
 
+/**
+ * Converts an axios error into a TestRail error that carries the HTTP status
+ * and TestRail's own error text (e.g. "Field :section_id is not a valid section.")
+ */
+export function toTestRailError(error: AxiosError): TestRailError {
+	if (error.code === "ECONNABORTED") {
+		return new TestRailTimeoutError();
+	}
+	if (!error.response) {
+		return new TestRailNetworkError(
+			error.message ? `Network error occurred: ${error.message}` : undefined,
+		);
+	}
+	const status = error.response.status;
+	const data = error.response.data;
+	const detail =
+		typeof (data as { error?: unknown })?.error === "string"
+			? (data as { error: string }).error
+			: undefined;
+	const withDetail = (summary: string) =>
+		detail ? `${summary} (${status}): ${detail}` : `${summary} (${status})`;
+
+	switch (status) {
+		case 400:
+			return new TestRailAPIError(status, withDetail("Bad Request"), data);
+		case 401:
+			return new TestRailAPIError(
+				status,
+				withDetail("Authentication failed"),
+				data,
+			);
+		case 403:
+			return new TestRailAPIError(
+				status,
+				withDetail("Permission denied"),
+				data,
+			);
+		case 404:
+			return new TestRailAPIError(
+				status,
+				withDetail("Resource not found"),
+				data,
+			);
+		case 429:
+			return new TestRailAPIError(
+				status,
+				withDetail("Rate limit exceeded"),
+				data,
+			);
+		default:
+			if (status >= 500) {
+				return new TestRailAPIError(
+					status,
+					withDetail("TestRail server error"),
+					data,
+				);
+			}
+			return new TestRailAPIError(
+				status,
+				withDetail(`Unknown error: ${detail ?? error.message}`),
+				data,
+			);
+	}
+}
+
 // TestRail API client configuration interface
 export interface TestRailClientConfig {
 	baseURL: string;
@@ -91,38 +156,7 @@ export class BaseTestRailClient {
 				throw error;
 			}
 			if (error instanceof AxiosError) {
-				if (error.code === "ECONNABORTED") {
-					throw new TestRailTimeoutError();
-				}
-				if (!error.response) {
-					throw new TestRailNetworkError();
-				}
-				const status = error.response.status;
-				const errorData = error.response.data as { error?: string };
-				const message = errorData?.error || error.message;
-				const data = error.response.data;
-
-				switch (status) {
-					case 400:
-						throw new TestRailAPIError(status, `Bad Request: ${message}`, data);
-					case 401:
-						throw new TestRailAPIError(status, "Authentication failed", data);
-					case 403:
-						throw new TestRailAPIError(status, "Permission denied", data);
-					case 404:
-						throw new TestRailAPIError(status, "Resource not found", data);
-					case 429:
-						throw new TestRailAPIError(status, "Rate limit exceeded", data);
-					default:
-						if (status >= 500) {
-							throw new TestRailAPIError(status, "TestRail server error", data);
-						}
-						throw new TestRailAPIError(
-							status,
-							`Unknown error: ${message}`,
-							data,
-						);
-				}
+				throw toTestRailError(error);
 			}
 			throw new TestRailError(
 				`Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
