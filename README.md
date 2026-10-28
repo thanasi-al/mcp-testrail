@@ -51,7 +51,13 @@ Use a dedicated TestRail user whose role grants only the permissions you want th
 export TESTRAIL_URL="https://your-instance.testrail.io"
 export TESTRAIL_USERNAME="your-email@example.com"
 export TESTRAIL_API_KEY="$(security find-generic-password -s testrail-mcp -a "$TESTRAIL_USERNAME" -w)"
-exec /absolute/path/to/node /absolute/path/to/mcp-testrail/dist/stdio.js
+
+# "approval-hook" runs the approval prompt hook (see below); otherwise, the server
+entry="dist/stdio.js"
+if [[ "${1:-}" == "approval-hook" ]]; then
+  entry="dist/approval/hook.js"
+fi
+exec /absolute/path/to/node "/absolute/path/to/mcp-testrail/$entry"
 ```
 
 ### Connect
@@ -75,6 +81,69 @@ Other MCP clients:
 ```
 
 Keep the server name `testrail`. Permission rules such as `mcp__testrail__delete*` match on that name.
+
+### Require approval for writes (Claude Code)
+
+To have Claude Code ask before every write, even in auto mode, add ask rules to `~/.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "ask": [
+      "mcp__testrail__add*",
+      "mcp__testrail__update*",
+      "mcp__testrail__delete*",
+      "mcp__testrail__move*",
+      "mcp__testrail__copy*"
+    ]
+  }
+}
+```
+
+Read tools (`get*`) still run without prompting.
+
+### Show target names in approval prompts (Claude Code)
+
+On its own, an approval prompt shows only the tool's arguments, so a write appears as a bare `sectionId: 474764`. The optional `dist/approval/hook.js` hook looks up each ID in TestRail and adds display-only lines naming the target:
+
+```text
+@project: TEST (#10)
+@suite: Master (#12949)
+@section: Feature1 [top level] (#474764)
+sectionId: 474764
+title: "New case"
+```
+
+Register it as a `PreToolUse` hook in `~/.claude/settings.json`, using the launcher's `approval-hook` mode so it gets the same credentials:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^mcp__testrail__(add|update|delete|move|copy)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/absolute/path/to/run-local.sh",
+            "args": ["approval-hook"],
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+How it behaves:
+
+- **Names come from TestRail, not from the caller.** The hook resolves project, suite, section (with its full path, or `[top level]`), case and run IDs itself. Any `@` keys already in the call are replaced, and a failed lookup is shown as failed.
+- **The `@` keys never reach TestRail.** The hook adds them through `updatedInput`. The server's input validation drops unknown keys before the tool runs.
+- **It never approves anything.** It always answers `ask`, including when it fails. The ask rules above are still what require approval; without the hook, prompts still appear but show only the IDs.
+- **It adds context for risky changes.** For example: the case's current `refs` on `updateCase`, since an update replaces them, and a warning on a hard `deleteSection`.
+
+The hook shows these names as extra arguments rather than in the prompt's reason text because, when an ask rule raises the prompt, Claude Code doesn't display the hook's `permissionDecisionReason`.
 
 ## Troubleshooting
 

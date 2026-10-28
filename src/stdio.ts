@@ -2,39 +2,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import "dotenv/config";
-import { TestRailClient, TestRailClientConfig } from "./client/api/index.js";
+import { createTestRailClientFromEnv } from "./client/env.js";
 import { registerAllTools } from "./server/api/index.js";
 
-// Validate TestRail configuration
-if (
-	!process.env.TESTRAIL_URL ||
-	!process.env.TESTRAIL_USERNAME ||
-	!process.env.TESTRAIL_API_KEY
-) {
-	throw new Error(
-		"TESTRAIL_URL, TESTRAIL_USERNAME, and TESTRAIL_API_KEY must be set",
-	);
-}
-
-// Correct URL format: https://example.testrail.com/index.php?/
-const url = process.env.TESTRAIL_URL;
-const baseURL = url.endsWith("/index.php?/")
-	? url
-	: url.endsWith("/")
-		? `${url}index.php?/`
-		: `${url}/index.php?/`;
-
-// TestRail client configuration
-const testRailConfig: TestRailClientConfig = {
-	baseURL: baseURL,
-	auth: {
-		username: process.env.TESTRAIL_USERNAME,
-		password: process.env.TESTRAIL_API_KEY,
-	},
-};
-
-// Initialize TestRail client
-const testRailClient = new TestRailClient(testRailConfig);
+// Initialize TestRail client (validates TESTRAIL_* configuration)
+const testRailClient = createTestRailClientFromEnv();
 
 // Create McpServer
 const server = new McpServer({
