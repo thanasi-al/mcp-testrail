@@ -84,11 +84,14 @@ Keep the server name `testrail`. Permission rules such as `mcp__testrail__delete
 
 ### Require approval for writes (Claude Code)
 
-To have Claude Code ask before every write, even in auto mode, add ask rules to `~/.claude/settings.json`:
+To have Claude Code ask before every write, even in auto mode, add ask rules to `~/.claude/settings.json`. The allow rule pre-approves the read tools (`get*`, which only make GET requests); without it, reads also prompt in Manual mode and whenever auto mode's classifier doesn't approve them. Ask rules take precedence over allow rules, so writes stay gated.
 
 ```json
 {
   "permissions": {
+    "allow": [
+      "mcp__testrail__get*"
+    ],
     "ask": [
       "mcp__testrail__add*",
       "mcp__testrail__update*",
@@ -99,8 +102,6 @@ To have Claude Code ask before every write, even in auto mode, add ask rules to 
   }
 }
 ```
-
-Read tools (`get*`) still run without prompting.
 
 ### Show target names in approval prompts (Claude Code)
 
